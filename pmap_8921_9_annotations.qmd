@@ -1,0 +1,319 @@
+---
+title: "pmap_8921_9_annotations"
+format: html
+editor: visual
+---
+
+## [Access the slides, code, and other materials at the course website](https://datavizm20.classes.andrewheiss.com/content/09-content/)
+
+## [slides](https://datavizm20.classes.andrewheiss.com/content/09-content/#slides)
+
+## [Youtube playlist](https://www.youtube.com/watch?v=6p4K5_6KU9k&list=PLS6tnpTr39sG4NCNqLqHhIE7khPgrdRJD&index=2)
+
+## [Download the data and see the polished code](https://datavizm20.classes.andrewheiss.com/example/09-example/)
+
+```{r}
+library(tidyverse)
+library(gapminder)
+library(WDI)
+library(scales)
+library(ggrepel)
+library(ggtext)
+```
+
+```{r}
+gapminder |> 
+  filter(year == 2007, 
+         continent == "Europe") |>
+  ggplot(aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() + 
+  geom_text(aes(label = country))
+  
+```
+
+```{r}
+# alternative geom_label, labels are neat but cover the points
+gapminder |> 
+  filter(year == 2007, 
+         continent == "Europe") |>
+  ggplot(aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() + 
+  geom_label(aes(label = country)) 
+```
+
+```{r}
+library(ggrepel)
+gapminder |> 
+  filter(year == 2007, 
+         continent == "Europe") |>
+  ggplot(aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() + 
+  geom_text_repel(aes(label = country)) 
+```
+
+```{r}
+library(ggrepel)
+gapminder |> 
+  filter(year == 2007, 
+         continent == "Europe") |>
+  ggplot(aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() + 
+  geom_label_repel(aes(label = country)) 
+```
+
+instead of using all the labels just using some of the important labels
+
+```{r}
+gapminder_europe <- gapminder |> 
+  filter(year == 2007, 
+         continent == "Europe") |> 
+  mutate(should_be_labelled = if_else(country %in% c("Albania", "Norway", "Hungary"), TRUE, FALSE)) 
+  
+  
+```
+
+```{r}
+gapminder_europe |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = should_be_labelled)) + 
+  geom_label_repel( data = gapminder_europe |> filter(should_be_labelled == TRUE),
+    aes(label = country, 
+        fill = "grey50"), 
+        color = "white") +
+  scale_color_manual(values = c("grey50", "red")) +
+  scale_fill_manual(values = c("grey50"))
+```
+
+## Highlight non-text things too!
+
+```{r}
+
+gapminder_highlighted <- gapminder |> 
+  mutate(is_oceania = if_else(continent == "Oceania", TRUE, FALSE))
+gapminder_highlighted
+```
+
+```{r}
+# Color just Oceania
+gapminder_highlighted |> 
+  ggplot(aes(x = year, y = lifeExp, 
+       group = country,
+       color = is_oceania, 
+       size = is_oceania)) + 
+  geom_line() + 
+  scale_color_manual(values = c("grey50", "red")) + 
+  scale_size_manual(values = c(0.1, 0.5)) + 
+  theme_minimal()
+```
+
+## Annotate
+
+```{r}
+gapminder_europe |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp)) + 
+  geom_point() + 
+  annotate(geom = 'text', 
+           x = 40000, 
+           y = 76, 
+           label = "Some text!")
+```
+
+```{r}
+gapminder_europe |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp)) + 
+  geom_point() + 
+  annotate(geom = 'label', 
+           x = 40000, 
+           y = 76, 
+           label = "Some text!")
+```
+
+```{r}
+gapminder_europe |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp)) + 
+  geom_point() + 
+  annotate(geom = 'rect', 
+           xmin = 30000, xmax = 50000,
+           ymin = 78, ymax = 82, 
+           fill = 'red4', 
+           alpha = 0.2 )
+```
+
+## multiple annotation 
+
+```{r}
+gapminder_europe |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp)) + 
+  geom_point() + 
+  annotate(geom = 'rect', 
+           xmin = 30000, xmax = 50000,
+           ymin = 78, ymax = 82, 
+           fill = 'red4', 
+           alpha = 0.2 ) + 
+  annotate(geom = 'label', 
+           x = 40000, y = 76.5, 
+           label = 'Rich and Long-living') + 
+  annotate(geom = 'segment', 
+           x = 40000, xend = 40000, 
+           y = 76.8, yend = 77.9, 
+           arrow = arrow(length = unit(0.1, "in")))
+```
+
+```{r}
+set.seed(1234)
+rnorm(3)
+```
+
+e.g. jittering in plots we need to use the set.seed to get the same results
+
+e.g. geom_text_repel () we need to use the set.seed
+
+we can choose different seed until jittering and repel labels are looking good.
+
+some of these functions have a seed argument - use it.
+
+geom_label_repel(...., seed = 1234)
+
+position_jitter(....., seed = 1234).
+
+```{r}
+mpg |> 
+  ggplot(aes(x = drv, y = hwy)) + 
+  geom_point(position = position_jitter(seed = 1234, width = 0.3))
+```
+
+```{r}
+indicators <- c('SP.POP.TOTL',  # Population
+                'EN.ATM.CO2E.PC', # CO2 emissions
+                'NY.GDP.PCAP.KD') # GDP per capita
+wdi_raw <- WDI( country = 'all', 
+                indicator = indicators, 
+                extra = TRUE, 
+                start = 1995, 
+                end = 2022)
+```
+
+```{r}
+# to see if this fetched the figures till 2022
+wdi_raw |> 
+  count(year) |> 
+  arrange(desc(year))
+```
+
+```{r}
+wdi_clean <- wdi_raw |> 
+  filter(region != "Aggregates") |> 
+  select(iso2c, iso3c, country, year, 
+         population = SP.POP.TOTL, 
+         co2_emission = EN.ATM.CO2E.PC, 
+         gdp_per_cap = NY.GDP.PCAP.KD, 
+         region, 
+         income)
+  
+```
+
+```{r}
+# check the emission data last year
+wdi_clean |> 
+  group_by(year) |> 
+  summarize(co2_emission_per_year = sum(co2_emission, na.rm = T)) |> 
+  arrange(desc(year))
+```
+
+```{r}
+co2_rankings <- wdi_clean |> 
+  filter(population > 200000, 
+         year %in% c(1995, 2020)) |> # since co2 emission data is only till 2020
+  drop_na(co2_emission) |> 
+  group_by(year) |> 
+  mutate(ranking = rank(co2_emission)) |> 
+  ungroup() |> 
+  select(iso3c, country, year, region, income, ranking) |> 
+  pivot_wider(names_from =  year, names_prefix = 'rank_', values_from = ranking) |> mutate(rank_diff = rank_2020 - rank_1995) |> 
+  drop_na(rank_diff) |> 
+  mutate(big_change = if_else(abs(rank_diff) >= 25, TRUE, FALSE)) |> 
+  mutate(better_big_change = case_when(
+    rank_diff <= -25 ~ 'Rank improved', 
+    rank_diff >= 25 ~ 'Rank worsened', 
+    TRUE ~ 'Rank changed a little'
+  ))
+```
+
+```{r}
+
+update_geom_defaults('text', list(family = "Graphik"))
+
+update_geom_defaults('label', list(family = "Graphik"))
+update_geom_defaults('label_repel', list(family = "Graphik"))
+
+co2_rankings |> 
+  ggplot(aes(x = rank_1995, y = rank_2020, color = better_big_change)) + 
+  geom_point() +
+  annotate(geom = 'segment', 
+           x = 0, xend = 175, 
+           y = 0, yend = 175) + 
+  geom_label_repel(data = co2_rankings |> filter(big_change == TRUE), 
+                   aes(label = country, fill = better_big_change), 
+                   color = 'white', seed = 1234)+
+  
+  scale_color_manual(values = c('grey50', '#0074D9', '#FF4136')) + 
+  scale_fill_manual(values = c('#0074D9', '#FF4136')) + 
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0, 175, 25)) + 
+  scale_y_continuous(expand = c(0, 0), breaks = seq(0, 175, 25)) +
+  annotate(
+    geom = 'text', x = 170, y = 6, label = 'Outlier improving', 
+    fontface = 'italic', color = 'grey50', hjust = 1 #right-aligned
+  ) + 
+  annotate(geom = 'text', 
+           x = 2, y = 170, label = 'Outlier worsening', 
+           fontface = 'italic', color = 'grey50', hjust = 0 # left-aligned
+           ) + 
+  annotate(geom = 'rect', 
+           xmin= 0, xmax = 25, 
+           ymin = 0, ymax = 25, 
+           fill = '#2ECC40', alpha = 0.25) + 
+  annotate(geom = 'rect', 
+           xmin = 150, xmax = 175, 
+           ymin = 150, ymax = 175, 
+           fill = '#FF851b', alpha = 0.25) + 
+  annotate(geom = 'text', 
+           x = 40, 
+           y = 6, 
+           label = 'Lowest Emitters', 
+           hjust = 0, # left aligned
+           color = '#2ECC40'
+    
+  ) +
+  annotate(geom = 'text', 
+           x = 140, y = 171, label = 'Highest emitters', 
+           hjust = 1, #center-aligned
+           color = '#FF851B') + 
+  annotate(geom = 'segment', 
+           x = 38, 
+           xend = 20, 
+           y = 6, 
+           yend = 6, 
+           color = '#2ECC40', 
+           arrow = arrow(angle = 15, length = unit(0.5, 'lines'))) + 
+  annotate(geom = 'segment', 
+           x = 142, 
+           xend = 155, 
+           y = 171,
+           yend = 171, 
+           color = '#FF851B', 
+           arrow = arrow(angle = 15, length = unit(0.5, 'lines'))) + 
+  labs(
+    x = 'Rank in 1995', 
+    y = 'Rank in 2020', 
+    title = 'Change in CO<sub>2</sub> emission rankings between 1995 and 2020',
+    
+    subtitle = "Countries that <span style = 'color: #0074D9'> **improved** </span> or <span style = 'color: #FF4136'>**worsened**</span> more than 25 positions in the rankings highlighted",
+      
+    caption = 'Source: The World Bank.\nCountries with populations of less than 200,000 excluded.'
+  ) +
+  theme_minimal(base_family = 'Graphik') +
+  theme(legend.position = 'none') + 
+  theme(plot.title = element_markdown(face = 'bold', size = rel(1.6)), 
+        plot.subtitle = element_markdown())
+  
+```
